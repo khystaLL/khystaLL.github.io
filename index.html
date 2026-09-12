@@ -206,6 +206,31 @@
     padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   }
   .comments-wrap h3{ font-size:13px; font-weight:600; margin-bottom:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; }
+
+  /* --- Reloj y fecha (estilo overlay tipo wallpaper) --- */
+  .clock-wrap{
+    position:fixed; top:22px; right:26px; z-index:2;
+    text-align:right; pointer-events:none;
+    text-shadow: 0 0 18px rgba(255,255,255,0.4);
+  }
+  .clock-time{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:300;
+    font-size: clamp(34px, 6vw, 58px);
+    letter-spacing: 1px;
+    line-height:1;
+    color: var(--glow);
+  }
+  .clock-date{
+    font-family:'Inter', sans-serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+  @media (max-width: 480px){
+    .clock-wrap{ top:14px; right:16px; }
+  }
 </style>
 </head>
 <body>
@@ -219,6 +244,11 @@
 <canvas id="shaderCanvas"></canvas>
 <canvas id="spectrumCanvas"></canvas>
 <div class="veil"></div>
+
+<div class="clock-wrap">
+  <div class="clock-time" id="clockTime">--:--</div>
+  <div class="clock-date" id="clockDate">----.--.--</div>
+</div>
 
 <div class="card">
   <div class="avatar-wrap">
@@ -358,6 +388,26 @@
   document.getElementById('viewCount').textContent = Math.floor(Math.random()*50)+10;
 
   /* =========================================================
+     RELOJ Y FECHA EN VIVO
+     ========================================================= */
+  const clockTimeEl = document.getElementById('clockTime');
+  const clockDateEl = document.getElementById('clockDate');
+
+  function updateClock(){
+    const now = new Date();
+    const hh = now.getHours().toString().padStart(2,'0');
+    const mm = now.getMinutes().toString().padStart(2,'0');
+    clockTimeEl.textContent = hh + ":" + mm;
+
+    const yyyy = now.getFullYear();
+    const mo = (now.getMonth()+1).toString().padStart(2,'0');
+    const dd = now.getDate().toString().padStart(2,'0');
+    clockDateEl.textContent = yyyy + "." + mo + "." + dd;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  /* =========================================================
      ANÁLISIS DE AUDIO (Web Audio API)
      Alimenta tanto el spectrum de barras como la intensidad
      del glitch cuando hay sonidos fuertes.
@@ -400,23 +450,31 @@
 
     if (analyser) {
       analyser.getByteFrequencyData(dataArray);
-      const bars = dataArray.length;
-      const barWidth = specCanvas.width / bars;
+      const totalBars = dataArray.length;
+
+      // Barras finas y espaciadas, ancladas cerca de la línea media-baja de la pantalla
+      const barSlotWidth = specCanvas.width / totalBars;
+      const barWidth = Math.max(2, barSlotWidth * 0.35);
+      const gap = barSlotWidth - barWidth;
+      const baseline = specCanvas.height * 0.62; // altura de la "línea" de barras
+      const maxBarHeight = specCanvas.height * 0.16;
+
       let sum = 0;
 
-      for (let i = 0; i < bars; i++) {
+      for (let i = 0; i < totalBars; i++) {
         const v = dataArray[i] / 255;
         sum += v;
-        const barHeight = v * specCanvas.height * 0.5;
-        const x = i * barWidth;
+        const barHeight = v * maxBarHeight;
+        const x = i * barSlotWidth + gap/2;
 
-        specCtx.fillStyle = "rgba(255,255,255," + (0.12 + v*0.35) + ")";
-        // barras subiendo desde abajo
-        specCtx.fillRect(x, specCanvas.height - barHeight, barWidth - 2, barHeight);
-        // reflejo sutil arriba
-        specCtx.fillRect(x, 0, barWidth - 2, barHeight * 0.25);
+        specCtx.fillStyle = "rgba(255,255,255," + (0.15 + v*0.5) + ")";
+        // barra hacia arriba desde la línea base
+        specCtx.fillRect(x, baseline - barHeight, barWidth, barHeight);
+        // reflejo más tenue hacia abajo
+        specCtx.fillStyle = "rgba(255,255,255," + (0.06 + v*0.2) + ")";
+        specCtx.fillRect(x, baseline, barWidth, barHeight * 0.35);
       }
-      vol = sum / bars;
+      vol = sum / totalBars;
     }
 
     /* --- Detección de transientes (sonidos fuertes) para el glitch --- */
