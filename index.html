@@ -447,6 +447,16 @@
   let signalFrames = 0;
   let usingRealSignal = false;
 
+  // Orden "mosaico": mezcla fija de los bins de frecuencia para que las barras
+  // no se vean como una rampa (grave→agudo) sino dispersas visualmente.
+  const binOrder = [];
+  for (let i = 0; i < 64; i++) binOrder.push(i);
+  function seededRandom(seed){ const x = Math.sin(seed) * 10000; return x - Math.floor(x); }
+  for (let i = binOrder.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom(i * 12.9898) * (i + 1));
+    [binOrder[i], binOrder[j]] = [binOrder[j], binOrder[i]];
+  }
+
   function drawSpectrum(t){
     requestAnimationFrame(drawSpectrum);
     specCtx.clearRect(0, 0, specCanvas.width, specCanvas.height);
@@ -487,7 +497,7 @@
     for (let i = 0; i < totalBars; i++) {
       let target;
       if (usingRealSignal) {
-        const binIndex = Math.floor((i / totalBars) * dataArray.length);
+        const binIndex = binOrder[i % binOrder.length];
         target = dataArray[binIndex] / 255;
       } else {
         target = 0.05 + 0.06 * (0.5 + 0.5 * Math.sin(time * 1.6 + i * 1.3))
