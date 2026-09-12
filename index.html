@@ -314,11 +314,12 @@
 
 <script>
   const playlist = [
-    { title: "Secret Sky - electric feel",      src: "music/secret-sky/bearface-electric_feel.mp3" },
     { title: "Secret Sky - Neffew",             src: "music/secret-sky/bearface-neffew.mp3" },
-    { title: "Secret Sky - baby chop",          src: "music/secret-sky/boylife-baby-chop.mp3" },
+    { title: "Secret Sky - secret beach",       src: "music/secret-sky/no-rome-secret-beach.mp3" },
+    { title: "Secret Sky - electric feel",      src: "music/secret-sky/bearface-electric_feel.mp3" },
     { title: "Secret Sky - adore",              src: "music/secret-sky/no-rome-adore.mp3" },
-    { title: "Secret Sky - secret beach",       src: "music/secret-sky/no-rome-secret-beach.mp3" }
+    { title: "Secret Sky - baby chop",          src: "music/secret-sky/boylife-baby-chop.mp3" }
+
   ];
   let current = 0;
 
@@ -456,7 +457,7 @@
       const barSlotWidth = specCanvas.width / totalBars;
       const barWidth = Math.max(2, barSlotWidth * 0.35);
       const gap = barSlotWidth - barWidth;
-      const baseline = specCanvas.height * 0.62; // altura de la "línea" de barras
+      const baseline = specCanvas.height * 0.5; // altura de la "línea" de barras
       const maxBarHeight = specCanvas.height * 0.16;
 
       let sum = 0;
