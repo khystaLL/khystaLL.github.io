@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>@khystaLL</title>
+<link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -21,32 +22,37 @@
     background: var(--bg);
     font-family: 'Inter', sans-serif;
     color: var(--text);
+    min-height:100%;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    overflow:hidden;
     gap:14px;
+    padding: 30px 12px;
   }
 
-  /* --- Video de fondo --- */
   .bg-video{
-    position:fixed; inset:0; z-index:-3;
+    position:fixed; inset:0; z-index:-4;
     width:100%; height:100%;
     object-fit: cover;
-    filter: blur(1.5px) brightness(0.75) saturate(1.05);
+    filter: blur(1.5px) brightness(0.7) saturate(1.05);
   }
   .bg-fallback{
-    position:fixed; inset:0; z-index:-4;
+    position:fixed; inset:0; z-index:-5;
     background:
       radial-gradient(circle at 30% 30%, rgba(255,255,255,0.06), transparent 55%),
       radial-gradient(circle at 75% 70%, rgba(255,255,255,0.04), transparent 55%),
       var(--bg);
   }
-
-  /* --- Shader WebGL superpuesto (grano sutil animado) --- */
   #shaderCanvas{
-    position:fixed; inset:0; z-index:-2;
+    position:fixed; inset:0; z-index:-3;
     width:100%; height:100%;
     mix-blend-mode: overlay;
     opacity: 0.35;
+    pointer-events:none;
+  }
+
+  /* --- Spectrum de barras reactivo --- */
+  #spectrumCanvas{
+    position:fixed; inset:0; z-index:-2;
+    width:100%; height:100%;
     pointer-events:none;
   }
 
@@ -56,7 +62,6 @@
     pointer-events:none;
   }
 
-  /* --- Tarjeta principal --- */
   .card{
     width: min(90vw, 400px);
     background: var(--card);
@@ -74,10 +79,7 @@
     to{ opacity:1; transform: translateY(0) scale(1); }
   }
 
-  /* --- Avatar --- */
-  .avatar-wrap{
-    position:relative; width:100px; height:100px; margin: 0 auto 16px;
-  }
+  .avatar-wrap{ position:relative; width:100px; height:100px; margin: 0 auto 16px; }
   .aura{
     position:absolute; inset:-8px; border-radius:50%;
     background: conic-gradient(from 0deg, rgba(255,255,255,0.6), rgba(255,255,255,0.05), rgba(255,255,255,0.6));
@@ -87,13 +89,11 @@
   @keyframes spin{ to{ transform: rotate(360deg); } }
   .avatar{
     position:relative; width:100px; height:100px; border-radius:50%;
-    background: #111;
-    border: 2px solid rgba(255,255,255,0.2);
-    overflow:hidden;
+    background: #111; border: 2px solid rgba(255,255,255,0.2); overflow:hidden;
   }
   .avatar img{ width:100%; height:100%; object-fit:cover; filter: grayscale(0.6) contrast(1.05); }
 
-  /* --- Nombre con efecto glitch --- */
+  /* --- Nombre con glitch: base ambiental + modo intenso audio-reactivo --- */
   h1.username{
     position:relative;
     font-family:'Space Grotesk', sans-serif;
@@ -102,25 +102,21 @@
     text-shadow: 0 0 20px var(--glow-soft);
     margin-bottom: 14px;
     display:inline-block;
+    --shake: 0px;
   }
   h1.username::before,
   h1.username::after{
     content: attr(data-text);
     position:absolute; left:0; top:0;
     width:100%; height:100%;
-    background: transparent;
     overflow:hidden;
   }
-  h1.username::before{
-    color:#7fdfff;
-    clip-path: inset(0 0 55% 0);
-    animation: glitch1 3.2s infinite linear alternate-reverse;
-  }
-  h1.username::after{
-    color:#ff7fd4;
-    clip-path: inset(55% 0 0 0);
-    animation: glitch2 2.6s infinite linear alternate-reverse;
-  }
+  h1.username::before{ color:#7fdfff; clip-path: inset(0 0 55% 0); }
+  h1.username::after{ color:#ff7fd4; clip-path: inset(55% 0 0 0); }
+
+  /* Idle: parpadeo sutil constante */
+  h1.username::before{ animation: glitch1 3.2s infinite linear alternate-reverse; }
+  h1.username::after{ animation: glitch2 2.6s infinite linear alternate-reverse; }
   @keyframes glitch1{
     0%,88%,100%{ transform:translate(0,0); opacity:0; }
     89%{ transform:translate(-2px,-1px); opacity:0.7; }
@@ -134,79 +130,82 @@
     97%{ transform:translate(1px,0); opacity:0; }
   }
 
-  .bio{
-    font-size: 13px; font-weight:500; color: var(--text-dim); line-height:1.55;
-    margin-bottom: 22px;
-    padding: 0 4px;
+  /* Modo intenso: activado por JS (sonidos fuertes o cambio de canción) */
+  h1.username.glitch-intense{ animation: shake 0.12s infinite; }
+  h1.username.glitch-intense::before{ animation: glitchHard1 0.25s infinite; opacity:0.9; }
+  h1.username.glitch-intense::after{ animation: glitchHard2 0.2s infinite; opacity:0.85; }
+  @keyframes shake{
+    0%{ transform:translate(0,0); }
+    25%{ transform:translate(-2px,1px); }
+    50%{ transform:translate(2px,-1px); }
+    75%{ transform:translate(-1px,-1px); }
+    100%{ transform:translate(1px,1px); }
+  }
+  @keyframes glitchHard1{
+    0%{ transform:translate(-4px,-2px); clip-path: inset(10% 0 50% 0); }
+    50%{ transform:translate(4px,2px); clip-path: inset(40% 0 20% 0); }
+    100%{ transform:translate(-3px,1px); clip-path: inset(5% 0 60% 0); }
+  }
+  @keyframes glitchHard2{
+    0%{ transform:translate(4px,2px); clip-path: inset(60% 0 5% 0); }
+    50%{ transform:translate(-4px,-2px); clip-path: inset(30% 0 35% 0); }
+    100%{ transform:translate(3px,-1px); clip-path: inset(70% 0 0% 0); }
   }
 
-  /* --- Redes sociales --- */
-  .socials{
-    display:flex; justify-content:center; gap:12px;
+  .bio{
+    font-size: 13px; font-weight:500; color: var(--text-dim); line-height:1.55;
+    margin-bottom: 22px; padding: 0 4px;
   }
+
+  .socials{ display:flex; justify-content:center; gap:12px; }
   .socials a{
     width:38px; height:38px; border-radius:12px;
-    background: rgba(255,255,255,0.06);
-    border:1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
     display:flex; align-items:center; justify-content:center;
-    color: var(--text); text-decoration:none;
-    transition: all 0.2s ease;
+    color: var(--text); text-decoration:none; transition: all 0.2s ease;
   }
-  .socials a:hover{
-    background: rgba(255,255,255,0.18);
-    border-color: rgba(255,255,255,0.4);
-    transform: translateY(-3px);
-  }
+  .socials a:hover{ background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.4); transform: translateY(-3px); }
   .socials svg{ width:17px; height:17px; }
 
   .views{
-    margin-top:14px;
-    font-size:11px; color: var(--text-dim);
+    margin-top:14px; font-size:11px; color: var(--text-dim);
     display:flex; align-items:center; justify-content:center; gap:5px;
   }
 
-  /* --- Reproductor de música (barra separada abajo) --- */
   .player-bar{
     width: min(90vw, 400px);
-    background: var(--card);
-    border: 1px solid var(--card-border);
-    border-radius: 18px;
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    padding: 10px 14px;
-    display:flex; align-items:center; gap:12px;
+    background: var(--card); border: 1px solid var(--card-border); border-radius: 18px;
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    padding: 10px 14px; display:flex; align-items:center; gap:12px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   }
-  .thumb{
-    width:44px; height:44px; border-radius:10px; overflow:hidden; flex-shrink:0;
-    background:#111;
-  }
+  .thumb{ width:44px; height:44px; border-radius:10px; overflow:hidden; flex-shrink:0; background:#111; }
   .thumb img{ width:100%; height:100%; object-fit:cover; }
   .player-info{ flex:1; min-width:0; }
   .player-title{ font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .progress-row{
-    display:flex; align-items:center; gap:8px; margin-top:5px;
-  }
+  .progress-row{ display:flex; align-items:center; gap:8px; margin-top:5px; }
   .time{ font-size:10.5px; color: var(--text-dim); flex-shrink:0; width:30px; }
   .time.end{ text-align:right; }
-  .progress{
-    flex:1; height:4px; border-radius:2px; background: rgba(255,255,255,0.15);
-    position:relative; cursor:pointer;
-  }
-  .progress-fill{
-    position:absolute; left:0; top:0; height:100%; width:0%;
-    background: var(--glow); border-radius:2px;
-  }
+  .progress{ flex:1; height:4px; border-radius:2px; background: rgba(255,255,255,0.15); position:relative; cursor:pointer; }
+  .progress-fill{ position:absolute; left:0; top:0; height:100%; width:0%; background: var(--glow); border-radius:2px; }
   .controls{ display:flex; align-items:center; gap:6px; flex-shrink:0; }
   .ctrl-btn{
     width:30px; height:30px; border-radius:50%; border:none; cursor:pointer;
     background: rgba(255,255,255,0.08); color: var(--text);
-    display:flex; align-items:center; justify-content:center;
-    transition: background 0.2s ease;
+    display:flex; align-items:center; justify-content:center; transition: background 0.2s ease;
   }
   .ctrl-btn:hover{ background: rgba(255,255,255,0.2); }
   .ctrl-btn.play{ width:34px; height:34px; background: var(--glow); color:#0a0a0a; }
   .ctrl-btn svg{ width:13px; height:13px; }
+
+  /* --- Comentarios --- */
+  .comments-wrap{
+    width: min(90vw, 400px);
+    background: var(--card); border: 1px solid var(--card-border); border-radius: 18px;
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+  .comments-wrap h3{ font-size:13px; font-weight:600; margin-bottom:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; }
 </style>
 </head>
 <body>
@@ -218,38 +217,25 @@
 </video>
 
 <canvas id="shaderCanvas"></canvas>
+<canvas id="spectrumCanvas"></canvas>
 <div class="veil"></div>
 
 <div class="card">
   <div class="avatar-wrap">
     <div class="aura"></div>
-    <div class="avatar">
-      <img src="resource/avatars/avatar_01.png" alt="avatar">
-    </div>
+    <div class="avatar"><img src="resource/avatars/avatar_01.png" alt="avatar"></div>
   </div>
 
-  <h1 class="username" data-text="khystaLL">khystaLL</h1>
+  <h1 class="username" id="usernameEl" data-text="khystaLL">khystaLL</h1>
 
-  <p class="bio">
-    Escribe aquí el fragmento de letra o frase que quieras mostrar.
-  </p>
+  <p class="bio">Escribe aquí el fragmento de letra o frase que quieras mostrar.</p>
 
   <div class="socials">
-    <a href="#" title="YouTube">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.6 7.2c-.2-1-1-1.7-1.9-1.9C18 5 12 5 12 5s-6 0-7.7.3c-1 .2-1.7.9-1.9 1.9C2 8.9 2 12 2 12s0 3.1.4 4.8c.2 1 1 1.7 1.9 1.9C6 19 12 19 12 19s6 0 7.7-.3c1-.2 1.7-.9 1.9-1.9.4-1.7.4-4.8.4-4.8s0-3.1-.4-4.8ZM10 15V9l5.2 3-5.2 3Z"/></svg>
-    </a>
-    <a href="#" title="Discord">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 5.4A17.6 17.6 0 0 0 15.9 4l-.2.4a12.6 12.6 0 0 1 3.7 1.9 15.9 15.9 0 0 0-13.6 0A12.9 12.9 0 0 1 9.5 4.4L9.3 4a17.6 17.6 0 0 0-4.4 1.4C2 10 1.3 14.5 1.6 19a17.7 17.7 0 0 0 5.4 2.7l.7-1.1a11 11 0 0 1-1.7-.9l.4-.3a12.6 12.6 0 0 0 11.2 0l.4.3c-.5.4-1.1.6-1.7.9l.7 1.1A17.6 17.6 0 0 0 22.4 19c.4-5.2-.8-9.6-2.1-13.6ZM8.7 16.2c-.9 0-1.7-.9-1.7-1.9s.7-1.9 1.7-1.9 1.7.9 1.7 1.9-.8 1.9-1.7 1.9Zm6.6 0c-.9 0-1.7-.9-1.7-1.9s.7-1.9 1.7-1.9 1.7.9 1.7 1.9-.7 1.9-1.7 1.9Z"/></svg>
-    </a>
-    <a href="#" title="TikTok">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.8a4.3 4.3 0 0 1-3.1-1.7v10.4a4.9 4.9 0 1 1-4.2-4.9v2.2a2.6 2.6 0 1 0 1.8 2.5V2h2.2a4.3 4.3 0 0 0 3.3 4.1v-.3Z"/></svg>
-    </a>
-    <a href="#" title="X / Twitter">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7.5 8.6L23 22h-6.9l-5.4-6.6L4.5 22H1.4l8-9.2L1 2h7l4.9 6.1L18.9 2Zm-1.2 18h1.7L7.4 4h-1.8l12.1 16Z"/></svg>
-    </a>
-    <a href="#" title="Spotify">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4.4 14.4a.6.6 0 0 1-.8.2c-2.3-1.4-5.2-1.7-8.6-.9a.6.6 0 1 1-.3-1.2c3.7-.9 6.9-.5 9.5 1.1a.6.6 0 0 1 .2.8Zm1.2-2.7a.75.75 0 0 1-1 .3c-2.6-1.6-6.6-2.1-9.7-1.1a.75.75 0 1 1-.5-1.4c3.5-1.1 7.9-.6 10.9 1.2a.75.75 0 0 1 .3 1Zm.1-2.8C14.9 9 8.9 8.8 6 9.7a.9.9 0 1 1-.5-1.7c3.4-1 10-.8 13.4 1.2a.9.9 0 1 1-.9 1.5Z"/></svg>
-    </a>
+    <a href="#" title="YouTube"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.6 7.2c-.2-1-1-1.7-1.9-1.9C18 5 12 5 12 5s-6 0-7.7.3c-1 .2-1.7.9-1.9 1.9C2 8.9 2 12 2 12s0 3.1.4 4.8c.2 1 1 1.7 1.9 1.9C6 19 12 19 12 19s6 0 7.7-.3c1-.2 1.7-.9 1.9-1.9.4-1.7.4-4.8.4-4.8s0-3.1-.4-4.8ZM10 15V9l5.2 3-5.2 3Z"/></svg></a>
+    <a href="#" title="Discord"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 5.4A17.6 17.6 0 0 0 15.9 4l-.2.4a12.6 12.6 0 0 1 3.7 1.9 15.9 15.9 0 0 0-13.6 0A12.9 12.9 0 0 1 9.5 4.4L9.3 4a17.6 17.6 0 0 0-4.4 1.4C2 10 1.3 14.5 1.6 19a17.7 17.7 0 0 0 5.4 2.7l.7-1.1a11 11 0 0 1-1.7-.9l.4-.3a12.6 12.6 0 0 0 11.2 0l.4.3c-.5.4-1.1.6-1.7.9l.7 1.1A17.6 17.6 0 0 0 22.4 19c.4-5.2-.8-9.6-2.1-13.6ZM8.7 16.2c-.9 0-1.7-.9-1.7-1.9s.7-1.9 1.7-1.9 1.7.9 1.7 1.9-.8 1.9-1.7 1.9Zm6.6 0c-.9 0-1.7-.9-1.7-1.9s.7-1.9 1.7-1.9 1.7.9 1.7 1.9-.7 1.9-1.7 1.9Z"/></svg></a>
+    <a href="#" title="TikTok"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.8a4.3 4.3 0 0 1-3.1-1.7v10.4a4.9 4.9 0 1 1-4.2-4.9v2.2a2.6 2.6 0 1 0 1.8 2.5V2h2.2a4.3 4.3 0 0 0 3.3 4.1v-.3Z"/></svg></a>
+    <a href="#" title="X / Twitter"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7.5 8.6L23 22h-6.9l-5.4-6.6L4.5 22H1.4l8-9.2L1 2h7l4.9 6.1L18.9 2Zm-1.2 18h1.7L7.4 4h-1.8l12.1 16Z"/></svg></a>
+    <a href="#" title="Spotify"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4.4 14.4a.6.6 0 0 1-.8.2c-2.3-1.4-5.2-1.7-8.6-.9a.6.6 0 1 1-.3-1.2c3.7-.9 6.9-.5 9.5 1.1a.6.6 0 0 1 .2.8Zm1.2-2.7a.75.75 0 0 1-1 .3c-2.6-1.6-6.6-2.1-9.7-1.1a.75.75 0 1 1-.5-1.4c3.5-1.1 7.9-.6 10.9 1.2a.75.75 0 0 1 .3 1Zm.1-2.8C14.9 9 8.9 8.8 6 9.7a.9.9 0 1 1-.5-1.7c3.4-1 10-.8 13.4 1.2a.9.9 0 1 1-.9 1.5Z"/></svg></a>
   </div>
 
   <div class="views">
@@ -264,29 +250,45 @@
     <div class="player-title" id="trackTitle">Cargando...</div>
     <div class="progress-row">
       <span class="time" id="curTime">0:00</span>
-      <div class="progress" id="progressBar">
-        <div class="progress-fill" id="progressFill"></div>
-      </div>
+      <div class="progress" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
       <span class="time end" id="durTime">0:00</span>
     </div>
   </div>
   <div class="controls">
-    <button class="ctrl-btn" id="prevBtn" aria-label="Anterior">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM20 6v12l-8.5-6z"/></svg>
-    </button>
-    <button class="ctrl-btn play" id="playBtn" aria-label="Reproducir">
-      <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-    </button>
-    <button class="ctrl-btn" id="nextBtn" aria-label="Siguiente">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM4 6v12l8.5-6z"/></svg>
-    </button>
+    <button class="ctrl-btn" id="prevBtn" aria-label="Anterior"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM20 6v12l-8.5-6z"/></svg></button>
+    <button class="ctrl-btn play" id="playBtn" aria-label="Reproducir"><svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+    <button class="ctrl-btn" id="nextBtn" aria-label="Siguiente"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM4 6v12l8.5-6z"/></svg></button>
   </div>
 </div>
 
-<audio id="audio"></audio>
+<!-- ===== Comentarios (Giscus, usa las Discussions de tu repo de GitHub) ===== -->
+<div class="comments-wrap">
+  <h3>Comentarios</h3>
+  <script src="https://giscus.app/client.js"
+    data-repo="khystaLL/khystaLL.github.io"
+    data-repo-id="TU_REPO_ID"
+    data-category="General"
+    data-category-id="TU_CATEGORY_ID"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="dark"
+    data-lang="es"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<audio id="audio" crossorigin="anonymous"></audio>
 
 <script>
-  /* ===== Playlist ===== */
+  /* =========================================================
+     CONFIGURACIÓN DE MÚSICA
+     Para agregar/quitar/renombrar canciones, edita esta lista.
+     "title" es el nombre que se muestra, "src" es la ruta al mp3.
+     ========================================================= */
   const playlist = [
     { title: "bearface - electric feel",     src: "music/secret-sky/bearface-electric_feel.mp3" },
     { title: "bearface - Neffew",            src: "music/secret-sky/bearface-neffew.mp3" },
@@ -306,12 +308,21 @@
   const durTime = document.getElementById('durTime');
   const progressBar = document.getElementById('progressBar');
   const progressFill = document.getElementById('progressFill');
+  const usernameEl = document.getElementById('usernameEl');
 
   function fmt(s){
     if (!isFinite(s)) return "0:00";
     const m = Math.floor(s/60);
     const sec = Math.floor(s%60).toString().padStart(2,'0');
     return m + ":" + sec;
+  }
+
+  function triggerGlitchBurst(duration){
+    usernameEl.classList.add('glitch-intense');
+    clearTimeout(usernameEl._glitchTimeout);
+    usernameEl._glitchTimeout = setTimeout(() => {
+      usernameEl.classList.remove('glitch-intense');
+    }, duration || 700);
   }
 
   function loadTrack(i, autoplay){
@@ -321,10 +332,12 @@
     trackTitle.textContent = track.title;
     progressFill.style.width = "0%";
     curTime.textContent = "0:00";
+    triggerGlitchBurst(900); // glitch fuerte al cambiar de canción
     if (autoplay) audio.play().catch(()=>{});
   }
 
   playBtn.addEventListener('click', () => {
+    ensureAudioGraph();
     if (!audio.src) { loadTrack(0, true); return; }
     if (audio.paused) audio.play().catch(()=>{});
     else audio.pause();
@@ -332,21 +345,13 @@
   prevBtn.addEventListener('click', () => loadTrack(current - 1, !audio.paused || audio.currentTime > 0));
   nextBtn.addEventListener('click', () => loadTrack(current + 1, !audio.paused || audio.currentTime > 0));
 
-  audio.addEventListener('play', () => {
-    playIcon.innerHTML = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
-  });
-  audio.addEventListener('pause', () => {
-    playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
-  });
+  audio.addEventListener('play', () => { playIcon.innerHTML = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>'; });
+  audio.addEventListener('pause', () => { playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>'; });
   audio.addEventListener('ended', () => loadTrack(current + 1, true));
-  audio.addEventListener('loadedmetadata', () => {
-    durTime.textContent = fmt(audio.duration);
-  });
+  audio.addEventListener('loadedmetadata', () => { durTime.textContent = fmt(audio.duration); });
   audio.addEventListener('timeupdate', () => {
     curTime.textContent = fmt(audio.currentTime);
-    if (audio.duration) {
-      progressFill.style.width = (audio.currentTime / audio.duration * 100) + "%";
-    }
+    if (audio.duration) progressFill.style.width = (audio.currentTime / audio.duration * 100) + "%";
   });
   progressBar.addEventListener('click', (e) => {
     const rect = progressBar.getBoundingClientRect();
@@ -356,8 +361,78 @@
 
   loadTrack(0, false);
 
-  /* ===== Contador de vistas (simulado) ===== */
   document.getElementById('viewCount').textContent = Math.floor(Math.random()*50)+10;
+
+  /* =========================================================
+     ANÁLISIS DE AUDIO (Web Audio API)
+     Alimenta tanto el spectrum de barras como la intensidad
+     del glitch cuando hay sonidos fuertes.
+     ========================================================= */
+  let audioCtx, analyser, dataArray, sourceNode;
+  let smoothedVolume = 0;
+
+  function ensureAudioGraph(){
+    if (audioCtx) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return;
+    }
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 128;
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
+    sourceNode = audioCtx.createMediaElementSource(audio);
+    sourceNode.connect(analyser);
+    analyser.connect(audioCtx.destination);
+  }
+
+  /* =========================================================
+     SPECTRUM DE BARRAS (canvas 2D)
+     ========================================================= */
+  const specCanvas = document.getElementById('spectrumCanvas');
+  const specCtx = specCanvas.getContext('2d');
+
+  function resizeSpec(){
+    specCanvas.width = window.innerWidth;
+    specCanvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeSpec);
+  resizeSpec();
+
+  function drawSpectrum(){
+    requestAnimationFrame(drawSpectrum);
+    specCtx.clearRect(0, 0, specCanvas.width, specCanvas.height);
+
+    let vol = 0;
+
+    if (analyser) {
+      analyser.getByteFrequencyData(dataArray);
+      const bars = dataArray.length;
+      const barWidth = specCanvas.width / bars;
+      let sum = 0;
+
+      for (let i = 0; i < bars; i++) {
+        const v = dataArray[i] / 255;
+        sum += v;
+        const barHeight = v * specCanvas.height * 0.5;
+        const x = i * barWidth;
+
+        specCtx.fillStyle = "rgba(255,255,255," + (0.12 + v*0.35) + ")";
+        // barras subiendo desde abajo
+        specCtx.fillRect(x, specCanvas.height - barHeight, barWidth - 2, barHeight);
+        // reflejo sutil arriba
+        specCtx.fillRect(x, 0, barWidth - 2, barHeight * 0.25);
+      }
+      vol = sum / bars;
+    }
+
+    /* --- Detección de transientes (sonidos fuertes) para el glitch --- */
+    smoothedVolume = smoothedVolume * 0.9 + vol * 0.1;
+    const spike = vol - smoothedVolume;
+    if (spike > 0.18 && !audio.paused) {
+      triggerGlitchBurst(220);
+    }
+  }
+  drawSpectrum();
 
   /* ===== Shader WebGL: grano sutil animado ===== */
   const canvas = document.getElementById('shaderCanvas');
@@ -372,19 +447,12 @@
   resize();
 
   if (gl) {
-    const vsSource = `
-      attribute vec2 a_position;
-      void main(){ gl_Position = vec4(a_position, 0.0, 1.0); }
-    `;
+    const vsSource = `attribute vec2 a_position; void main(){ gl_Position = vec4(a_position, 0.0, 1.0); }`;
     const fsSource = `
       precision highp float;
       uniform float u_time;
       uniform vec2 u_resolution;
-
-      float rand(vec2 co){
-        return fract(sin(dot(co, vec2(12.9898,78.233))) * 43758.5453 + u_time*0.7);
-      }
-
+      float rand(vec2 co){ return fract(sin(dot(co, vec2(12.9898,78.233))) * 43758.5453 + u_time*0.7); }
       void main(){
         vec2 uv = gl_FragCoord.xy / u_resolution;
         float grain = rand(uv * u_resolution.xy * 0.35) * 0.5;
@@ -394,35 +462,19 @@
         gl_FragColor = vec4(vec3(value), 1.0);
       }
     `;
-
-    function compile(type, src){
-      const s = gl.createShader(type);
-      gl.shaderSource(s, src);
-      gl.compileShader(s);
-      return s;
-    }
+    function compile(type, src){ const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
     const vs = compile(gl.VERTEX_SHADER, vsSource);
     const fs = compile(gl.FRAGMENT_SHADER, fsSource);
     const program = gl.createProgram();
-    gl.attachShader(program, vs);
-    gl.attachShader(program, fs);
-    gl.linkProgram(program);
-    gl.useProgram(program);
-
+    gl.attachShader(program, vs); gl.attachShader(program, fs); gl.linkProgram(program); gl.useProgram(program);
     const posBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-      -1,-1,  1,-1,  -1,1,
-      -1,1,   1,-1,   1,1
-    ]), gl.STATIC_DRAW);
-
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
     const posLoc = gl.getAttribLocation(program, 'a_position');
     gl.enableVertexAttribArray(posLoc);
     gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
-
     const timeLoc = gl.getUniformLocation(program, 'u_time');
     const resLoc = gl.getUniformLocation(program, 'u_resolution');
-
     function render(t){
       gl.uniform1f(timeLoc, t*0.001);
       gl.uniform2f(resLoc, canvas.width, canvas.height);
