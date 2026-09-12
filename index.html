@@ -422,7 +422,7 @@
     }
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 128;
+    analyser.fftSize = 256;
     dataArray = new Uint8Array(analyser.frequencyBinCount);
     sourceNode = audioCtx.createMediaElementSource(audio);
     sourceNode.connect(analyser);
@@ -442,7 +442,7 @@
   window.addEventListener('resize', resizeSpec);
   resizeSpec();
 
-  let barValues = new Array(64).fill(0.05);
+  let barValues = new Array(128).fill(0.05);
   let silentFrames = 0;
   let signalFrames = 0;
   let usingRealSignal = false;
@@ -450,7 +450,7 @@
   // Orden "mosaico": mezcla fija de los bins de frecuencia para que las barras
   // no se vean como una rampa (grave→agudo) sino dispersas visualmente.
   const binOrder = [];
-  for (let i = 0; i < 64; i++) binOrder.push(i);
+  for (let i = 0; i < 128; i++) binOrder.push(i);
   function seededRandom(seed){ const x = Math.sin(seed) * 10000; return x - Math.floor(x); }
   for (let i = binOrder.length - 1; i > 0; i--) {
     const j = Math.floor(seededRandom(i * 12.9898) * (i + 1));
@@ -480,14 +480,14 @@
     if (!usingRealSignal && signalFrames > 3) usingRealSignal = true;
     if (usingRealSignal && silentFrames > 20) usingRealSignal = false;
 
-    const totalBars = 64;
+    const totalBars = 128;
 
     const spectrumWidthRatio = 0.92;
     const spectrumWidth = specCanvas.width * spectrumWidthRatio;
     const startX = (specCanvas.width - spectrumWidth) / 2;
 
     const barSlotWidth = spectrumWidth / totalBars;
-    const barWidth = Math.max(2, barSlotWidth * 0.35);
+    const barWidth = Math.max(2, barSlotWidth * 0.6);
     const gap = barSlotWidth - barWidth;
     const baseline = specCanvas.height * 0.5;
     const maxBarHeight = specCanvas.height * 0.16;
