@@ -442,6 +442,11 @@
   window.addEventListener('resize', resizeSpec);
   resizeSpec();
 
+  let barValues = new Array(64).fill(0.05);
+  let silentFrames = 0;
+  let signalFrames = 0;
+  let usingRealSignal = false;
+
   function drawSpectrum(t){
     requestAnimationFrame(drawSpectrum);
     specCtx.clearRect(0, 0, specCanvas.width, specCanvas.height);
@@ -450,13 +455,20 @@
     const time = (t || 0) * 0.001;
 
     // ¿Hay audio real sonando y con señal?
-    let hasRealSignal = false;
+    let frameHasSignal = false;
     if (analyser && !audio.paused) {
       analyser.getByteFrequencyData(dataArray);
       let checkSum = 0;
       for (let i = 0; i < dataArray.length; i++) checkSum += dataArray[i];
-      hasRealSignal = checkSum > 0;
+      frameHasSignal = checkSum > 0;
     }
+
+    // Histéresis: exige varios frames seguidos antes de cambiar de modo
+    if (frameHasSignal) { signalFrames++; silentFrames = 0; }
+    else { silentFrames++; signalFrames = 0; }
+
+    if (!usingRealSignal && signalFrames > 3) usingRealSignal = true;
+    if (usingRealSignal && silentFrames > 20) usingRealSignal = false;
 
     const totalBars = 64;
 
@@ -473,16 +485,18 @@
     let sum = 0;
 
     for (let i = 0; i < totalBars; i++) {
-      let v;
-      if (hasRealSignal) {
-        // toma el bin real correspondiente (dataArray puede tener otro largo)
+      let target;
+      if (usingRealSignal) {
         const binIndex = Math.floor((i / totalBars) * dataArray.length);
-        v = dataArray[binIndex] / 255;
+        target = dataArray[binIndex] / 255;
       } else {
-        // estática idle: ruido suave por barra, siempre visible pero bajo
-        v = 0.05 + 0.06 * (0.5 + 0.5 * Math.sin(time * 1.6 + i * 1.3))
-                 + 0.03 * Math.random();
+        target = 0.05 + 0.06 * (0.5 + 0.5 * Math.sin(time * 1.6 + i * 1.3))
+                       + 0.03 * Math.random();
       }
+
+      // Suavizado: cada barra se acerca a su valor objetivo en vez de saltar
+      barValues[i] += (target - barValues[i]) * 0.35;
+      const v = barValues[i];
       sum += v;
 
       const barHeight = v * maxBarHeight;
@@ -498,7 +512,7 @@
     /* --- Detección de transientes (sonidos fuertes) para el glitch --- */
     smoothedVolume = smoothedVolume * 0.9 + vol * 0.1;
     const spike = vol - smoothedVolume;
-    if (hasRealSignal && spike > 0.18 && !audio.paused) {
+    if (usingRealSignal && spike > 0.18 && !audio.paused) {
       triggerGlitchBurst(220);
     }
   }
